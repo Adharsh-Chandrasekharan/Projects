@@ -44,8 +44,8 @@ function addTodo() {
   if ( name ){
     todoList.push({
     name,dueDate
-
-  })};
+    })
+  };
 
   
 
