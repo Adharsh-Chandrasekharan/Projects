@@ -41,9 +41,12 @@ function addTodo() {
   const dateInputElement = document.querySelector('.js-due-date-input');
   const dueDate= dateInputElement.value;
 
-  todoList.push({
+  if ( name ){
+    todoList.push({
     name,dueDate
-  });
+
+  })};
+
   
 
   inputElement.value = '';
