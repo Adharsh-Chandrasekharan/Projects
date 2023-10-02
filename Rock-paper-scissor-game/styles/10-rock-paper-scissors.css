@@ -35,3 +35,7 @@ body{
   padding: 8px 15px;
   cursor: pointer;
 }
+.container{
+  display: grid;
+  justify-content: center;
+}
