@@ -1,0 +1,93 @@
+body {
+  font-family: 'Arial', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4;
+ 
+}
+
+header {
+  height: 75px;
+  background-color: #333;
+  color: white;
+  text-align: center;
+  position: relative;
+}
+header h1 {
+ padding:20px;
+}
+header img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: 20px;
+}
+header img:hover + .profile-description{
+  display: block;
+  
+}
+.profile-description{
+  display: none;
+  color: black;
+  position: absolute;
+  top: 100%;
+  transform: translateY(-50%);
+  right: 20px;
+  background-color: #f0f0f0;
+  padding: 10px;
+  border-radius: 10px;
+
+}
+
+section {
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.project {
+  display: block;
+  margin-bottom: 10px;
+  padding: 10px;
+  text-decoration: none;
+  color: #333;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+  /* margin-bottom: 20px;
+  padding: 15px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px; */
+}
+
+.project h2 {
+  color: #333;
+}
+
+.project p {
+  color: #666;
+}
+
+a {
+  color: #3498db;
+  text-decoration: none;
+  transition: color 0.3s;
+  color: #2980b9
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  section {
+      padding: 10px;
+  }
+}
