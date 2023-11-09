@@ -1,15 +1,19 @@
 body {
-    background-color: #f2f2f2;
+    /* background-color: #f2f2f2; */
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-  }
+    /* position: relative; */
+    
+  background: #9242ED;
+  background: linear-gradient(135deg, #9242ED, #79D8B1);
+    }
   
   .container {
     max-width: 400px;
     margin: 50px auto;
     padding: 20px;
-    background-color: #fff;
+    /* background-color: #fff; */
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     text-align: center;
@@ -46,3 +50,23 @@ body {
     margin-top: 20px;
     font-weight: bold;
   }
+
+  .custom-shape-divider-top-1699514248 {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+    line-height: 0;
+}
+
+.custom-shape-divider-top-1699514248 svg {
+    position: relative;
+    display: block;
+    width: calc(100% + 1.3px);
+    height: 209px;
+}
+
+.custom-shape-divider-top-1699514248 .shape-fill {
+    fill: #ff4444;
+}
