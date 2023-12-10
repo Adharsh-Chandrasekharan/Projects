@@ -1,0 +1,23 @@
+body{
+  margin: 0;
+  padding: 0;
+}
+.container{
+  margin: 20px;
+  padding: 10px;
+}
+.header{
+  margin: 10px;
+  font-size: xx-large;
+  font-weight: bolder;
+  
+
+}
+.content{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.image img{
+  height: 100%;
+  width: 100%;
+}
