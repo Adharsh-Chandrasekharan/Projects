@@ -58,6 +58,11 @@
     border-radius: 2px;
 
 }
+@media (min-width: 2001px) {
+  .video-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
 
   @media (max-width: 2000px) {
     .video-grid {
