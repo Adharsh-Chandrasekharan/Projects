@@ -43,7 +43,9 @@ header img:hover + .profile-description{
 
 }
 
-section {
+.project-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   max-width: 800px;
   margin: 20px auto;
   padding: 20px;
@@ -51,7 +53,12 @@ section {
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
-
+@media  only screen and (max-width : 650px) {
+  .project-container{
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
 .project {
   display: block;
   margin-bottom: 10px;
