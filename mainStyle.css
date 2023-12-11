@@ -46,6 +46,8 @@ header img:hover + .profile-description{
 .project-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  column-gap: 20px;
+  row-gap: 10px;
   max-width: 800px;
   margin: 20px auto;
   padding: 20px;
@@ -53,10 +55,18 @@ header img:hover + .profile-description{
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
-@media  only screen and (max-width : 650px) {
+@media  only screen and (max-width : 750px) {
   .project-container{
     display: grid;
     grid-template-columns: 1fr;
+
+  }
+}
+@media  only screen and (min-width : 2000px) {
+  .project-container{
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    max-width: 1200px;
   }
 }
 .project {
@@ -73,6 +83,10 @@ header img:hover + .profile-description{
   background-color: #fff;
   border: 1px solid #ddd;
   border-radius: 8px; */
+}
+.project img{
+  width: 100%;
+  
 }
 
 .project h2 {
