@@ -42,9 +42,6 @@ body{
 }
 .container{
   display: grid;
-  /* max-width: 500px; */
-  /* margin: 50px auto;
-  align-items: center; */
   justify-content: center; 
   
 }
@@ -62,7 +59,6 @@ body{
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     text-align: center;
   }
-  
   /* border:solid 2px;
   padding: 40px 40px;
   border-radius: 15px;
