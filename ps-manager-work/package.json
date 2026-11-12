@@ -21,6 +21,7 @@
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "build:api": "tsc -p tsconfig.server.json",
+    "start": "node dist-server/server/index.js",
     "start:api": "node dist-server/server/index.js",
     "dev:api": "tsx server/index.ts"
   },
