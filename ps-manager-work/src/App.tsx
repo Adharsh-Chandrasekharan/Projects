@@ -16,7 +16,7 @@ function App() {
   useEffect(() => {
     let mounted = true;
 
-    const unsubscribe = window.ipcRenderer.on(IPC.AuthExpired, () => {
+    const unsubscribe = window.ipcRenderer.on?.(IPC.AuthExpired, () => {
       setAuthenticated(false);
       setAuthChecked(true);
     });
@@ -35,7 +35,7 @@ function App() {
 
     return () => {
       mounted = false;
-      unsubscribe();
+      unsubscribe?.();
     };
   }, []);
 

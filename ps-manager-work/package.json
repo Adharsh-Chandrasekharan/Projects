@@ -23,7 +23,8 @@
     "build:api": "tsc -p tsconfig.server.json",
     "start": "node dist-server/server/index.js",
     "start:api": "node dist-server/server/index.js",
-    "dev:api": "tsx server/index.ts"
+    "dev:api": "tsx server/index.ts",
+    "build:web": "tsc --noEmit && vite build --config vite.web.config.ts"
   },
   "dependencies": {
     "@azure/identity": "^4.14.1",

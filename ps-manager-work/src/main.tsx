@@ -1,4 +1,9 @@
 import "./index.css";
+import { installBrowserIpc } from "./lib/browserIpc";
+
+// In a normal browser, provide the same IPC-shaped interface used by the Electron renderer.
+// Electron preload already exposes window.ipcRenderer, so it is left untouched.
+installBrowserIpc();
 import App from "./App.tsx";
 
 import React from "react";
