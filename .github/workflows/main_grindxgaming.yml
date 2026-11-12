@@ -1,0 +1,64 @@
+
+name: Deploy GRINDxGAMING API
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'ps-manager-work/**'
+      - '.github/workflows/main_grindxgaming.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ps-manager-work/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ps-manager-work
+        run: npm ci
+
+      - name: Build API
+        working-directory: ps-manager-work
+        run: npm run build:api
+
+      - name: Remove development dependencies
+        working-directory: ps-manager-work
+        run: npm prune --omit=dev
+
+      - name: Package API
+        working-directory: ps-manager-work
+        run: |
+          zip -qr "$GITHUB_WORKSPACE/api-deploy.zip" \
+            dist-server \
+            node_modules \
+            package.json \
+            package-lock.json
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy API to Azure App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: grindxgaming
+          package: api-deploy.zip
