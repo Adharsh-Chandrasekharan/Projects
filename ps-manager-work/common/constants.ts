@@ -7,10 +7,16 @@ export const IPC = {
   AddPlayers: 'Add Players',
   ExtendTime: 'Extend Time',
   UpdateRates: 'Update Console Rates',
-  getPass: 'get password from json',
-  UpdataPassword: 'Update Admin Password',
   Delete: 'Delete Console',
   Reset: 'Reset DataBase',
+  // Legacy local-password channels retained for source compatibility; no handlers are registered.
+  getPass: 'get password from json',
+  UpdataPassword: 'Update Admin Password',
+
+  Login: 'API Login',
+  AuthStatus: 'API Auth Status',
+  Logout: 'API Logout',
+  AuthExpired: 'API Auth Expired',
 } as const;
 
 export const lables = {

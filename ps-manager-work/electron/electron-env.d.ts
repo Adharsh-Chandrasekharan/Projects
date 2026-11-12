@@ -2,26 +2,14 @@
 
 declare namespace NodeJS {
   interface ProcessEnv {
-    /**
-     * The built directory structure
-     *
-     * ```tree
-     * ├─┬─┬ dist
-     * │ │ └── index.html
-     * │ │
-     * │ ├─┬ dist-electron
-     * │ │ ├── main.js
-     * │ │ └── preload.js
-     * │
-     * ```
-     */
-    DIST: string
-    /** /dist/ or /public/ */
-    VITE_PUBLIC: string
+    DIST: string;
+    VITE_PUBLIC: string;
   }
 }
 
-// Used in Renderer process, expose in `preload.ts`
 interface Window {
-  ipcRenderer: import('electron').IpcRenderer
+  ipcRenderer: {
+    invoke(channel: string, ...args: unknown[]): Promise<any>;
+    on(channel: string, listener: (...args: unknown[]) => void): () => void;
+  };
 }

@@ -143,9 +143,9 @@ export class SqlServer {
       }
 
       const candidate = new sql.ConnectionPool(config);
-      candidate.on('error', (error) => {
-        console.error('[Azure SQL] Pool error:', error);
-      });
+      candidate.on('error', (error: Error) =>
+        console.error('[Azure SQL] Pool error:', error)
+      );
 
       try {
         await candidate.connect();
@@ -218,7 +218,7 @@ export class SqlServer {
       ratesByConsole.set(id, current);
     }
 
-    return consoleResult.recordset.map((row) => ({
+    return consoleResult.recordset.map((row: Record<string, any>) => ({
       ...row,
       PlayStationID: Number(row.PlayStationID),
       IsAvailable: Boolean(row.IsAvailable),
@@ -479,14 +479,37 @@ export class SqlServer {
     if (!Number.isInteger(playersNumber) || playersNumber < 1 || playersNumber > 4) throw new Error('Player count must be between 1 and 4.');
   }
 
-  private async getRate(source: sql.ConnectionPool | sql.Transaction, playStationId: number, playersNumber: number): Promise<ConsoleRate> {
-    const result = await new sql.Request(source)
+  private async getRate(
+    source: sql.ConnectionPool | sql.Transaction,
+    playStationId: number,
+    playersNumber: number
+  ): Promise<ConsoleRate> {
+    const request = source instanceof sql.Transaction
+      ? new sql.Request(source)
+      : new sql.Request(source);
+  
+    const result = await request
       .input('id', sql.Int, playStationId)
       .input('players', sql.TinyInt, playersNumber)
-      .query(`SELECT PlayersNumber, HourlyAmount, HalfHourAmount FROM dbo.PlayStationRates WHERE PlayStationID = @id AND PlayersNumber = @players;`);
-    if (!result.recordset.length) throw new Error(`No saved rate exists for ${playersNumber} player(s). Edit this console's rates in setup.`);
+      .query(`
+        SELECT PlayersNumber, HourlyAmount, HalfHourAmount
+        FROM dbo.PlayStationRates
+        WHERE PlayStationID = @id AND PlayersNumber = @players;
+      `);
+  
+    if (!result.recordset.length) {
+      throw new Error(
+        `No saved rate exists for ${playersNumber} player(s). Edit this console's rates in setup.`
+      );
+    }
+  
     const row = result.recordset[0];
-    return { PlayersNumber: Number(row.PlayersNumber), HourlyAmount: Number(row.HourlyAmount), HalfHourAmount: Number(row.HalfHourAmount) };
+  
+    return {
+      PlayersNumber: Number(row.PlayersNumber),
+      HourlyAmount: Number(row.HourlyAmount),
+      HalfHourAmount: Number(row.HalfHourAmount)
+    };
   }
 
   private async getActiveSessionForUpdate(transaction: sql.Transaction, playStationId: number): Promise<any> {
@@ -525,5 +548,13 @@ export class SqlServer {
             DiscountAmount = @discountAmount, TotalAmount = @total, PerPersonAmount = @perPerson
         WHERE SessionID = @sessionId;
       `);
+  }
+
+  async close(): Promise<void> {
+    if (this.pool) {
+      const pool = this.pool;
+      this.pool = undefined;
+      await pool.close();
+    }
   }
 }

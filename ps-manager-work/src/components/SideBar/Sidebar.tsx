@@ -2,8 +2,10 @@ import { useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { HiHome, HiOutlineX } from 'react-icons/hi';
 import { TbUserEdit } from 'react-icons/tb';
+import { FiLogOut } from 'react-icons/fi';
 import { twMerge } from 'tailwind-merge';
 import { useMobileSidebar } from '../../context/MobileSidebarContext';
+import { IPC } from '../../../common/constants';
 import Box from './Box';
 import Library from './Library';
 import SidebarItem from './SidebarItem';
@@ -29,6 +31,11 @@ function Sidebar() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isOpen, close]);
+
+  const signOut = async () => {
+    await window.ipcRenderer.invoke(IPC.Logout);
+    window.location.reload();
+  };
 
   return (
     <>
@@ -67,9 +74,19 @@ function Sidebar() {
             {routes.map((item) => <SidebarItem key={item.label} {...item} />)}
           </div>
         </Box>
+
         <Box className="h-full overflow-y-auto">
           <Library />
         </Box>
+
+        <button
+          type="button"
+          onClick={signOut}
+          className="flex w-full items-center gap-3 rounded-xl border border-neutral-800 px-5 py-3 text-sm font-semibold text-neutral-300 transition hover:border-red-800 hover:bg-red-950/40 hover:text-white"
+        >
+          <FiLogOut size={18} />
+          Sign out
+        </button>
       </aside>
     </>
   );

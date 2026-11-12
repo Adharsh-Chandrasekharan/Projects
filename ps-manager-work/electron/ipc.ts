@@ -1,130 +1,196 @@
 import { ipcMain, BrowserWindow } from 'electron';
 import { IPC } from '../common/constants';
-import { SqlServer } from './sqlServer';
 
-const storage = require('electron-json-storage');
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
+type ApiResult = {
+  code: number;
+  msg?: any;
+};
 
 export class Ipc {
-  constructor(public win: BrowserWindow, public sql: SqlServer) {
-    ipcMain.handle(IPC.createPlaystation, async (_event, args) => {
+  private token: string | null = null;
+  private tokenExpiresAt = 0;
+  private readonly apiBaseUrl: string;
+
+  constructor(public win: BrowserWindow, apiBaseUrl: string) {
+    this.apiBaseUrl = apiBaseUrl.replace(/\/+$/, '');
+
+    const clearAuthentication = () => {
+      this.token = null;
+      this.tokenExpiresAt = 0;
+    };
+
+    const request = async (
+      endpoint: string,
+      method = 'GET',
+      body?: unknown,
+    ): Promise<any> => {
+      if (!this.token || Date.now() >= this.tokenExpiresAt) {
+        clearAuthentication();
+        throw new Error('Your login has expired. Please sign in again.');
+      }
+
+      const response = await fetch(`${this.apiBaseUrl}${endpoint}`, {
+        method,
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+          ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        },
+        ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (response.status === 401) {
+        clearAuthentication();
+        this.win.webContents.send(IPC.AuthExpired);
+      }
+
+      if (!response.ok) {
+        throw new Error(payload?.message || `API request failed (${response.status}).`);
+      }
+
+      return payload;
+    };
+
+    ipcMain.handle(IPC.AuthStatus, async () => {
+      if (!this.token || Date.now() >= this.tokenExpiresAt) {
+        clearAuthentication();
+        return { authenticated: false };
+      }
+      return { authenticated: true };
+    });
+
+    ipcMain.handle(IPC.Login, async (_event, credentials): Promise<ApiResult> => {
       try {
-        const id = await sql.addPlaystation(args);
-        const all = await sql.getAllPlaystations();
-        return { code: 1, msg: all.find((item) => item.PlayStationID === id) };
+        const response = await fetch(`${this.apiBaseUrl}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: String(credentials?.username || ''),
+            password: String(credentials?.password || ''),
+          }),
+        });
+
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok || typeof payload?.token !== 'string') {
+          throw new Error(payload?.message || 'Login failed. Check your username and password.');
+        }
+
+        this.token = payload.token;
+        const expiresIn = Number(payload.expiresIn || 28800);
+        this.tokenExpiresAt = Date.now() + expiresIn * 1000;
+
+        return { code: 1 };
       } catch (error) {
-        return { code: 0, msg: errorMessage(error) };
+        return {
+          code: 0,
+          msg: error instanceof Error ? error.message : String(error),
+        };
       }
     });
 
-    ipcMain.handle(IPC.getAllPlaystations, async () => {
+    ipcMain.handle(IPC.Logout, async () => {
+      clearAuthentication();
+      return { code: 1 };
+    });
+
+    ipcMain.handle(IPC.getAllPlaystations, async (): Promise<ApiResult> => {
       try {
-        return { code: 1, msg: await sql.getAllPlaystations() };
+        return { code: 1, msg: await request('/api/consoles') };
       } catch (error) {
-        return { code: 0, msg: errorMessage(error) };
+        return { code: 0, msg: error instanceof Error ? error.message : String(error) };
       }
     });
 
-    ipcMain.handle(IPC.getSession, async (_event, args) => {
+    ipcMain.handle(IPC.createPlaystation, async (_event, args): Promise<ApiResult> => {
       try {
-        const session = await sql.getSession(Number(args.PlayStationID));
+        const created = await request('/api/consoles', 'POST', args);
+        const consoles = await request('/api/consoles');
+        return {
+          code: 1,
+          msg: consoles.find((item: any) => Number(item.PlayStationID) === Number(created.id)),
+        };
+      } catch (error) {
+        return { code: 0, msg: error instanceof Error ? error.message : String(error) };
+      }
+    });
+
+    ipcMain.handle(IPC.getSession, async (_event, args): Promise<ApiResult> => {
+      try {
+        const session = await request(`/api/consoles/${Number(args.PlayStationID)}/session`);
         return session
           ? { code: 1, msg: session }
           : { code: 0, msg: 'No active session found for this console.' };
       } catch (error) {
-        return { code: 0, msg: errorMessage(error) };
+        return { code: 0, msg: error instanceof Error ? error.message : String(error) };
       }
     });
 
-    ipcMain.handle(IPC.Reserve, async (_event, args) => {
+    ipcMain.handle(IPC.Reserve, async (_event, args): Promise<ApiResult> => {
       try {
-        const result = await sql.reserve(
-          Number(args.PlayStationID),
-          Number(args.PlayersNumber),
-          Number(args.DurationMinutes),
-          Number(args.DiscountPercent ?? 0),
-        );
+        const result = await request('/api/sessions/reserve', 'POST', args);
         return { code: 1, msg: result };
       } catch (error) {
-        return { code: 0, msg: errorMessage(error) };
+        return { code: 0, msg: error instanceof Error ? error.message : String(error) };
       }
     });
 
-    ipcMain.handle(IPC.End, async (_event, args) => {
+    ipcMain.handle(IPC.End, async (_event, args): Promise<ApiResult> => {
       try {
-        return { code: 1, msg: await sql.endSession(Number(args.PlayStationID)) };
+        const result = await request('/api/sessions/end', 'POST', args);
+        return { code: 1, msg: result };
       } catch (error) {
-        return { code: 0, msg: errorMessage(error) };
+        return { code: 0, msg: error instanceof Error ? error.message : String(error) };
       }
     });
 
-    ipcMain.handle(IPC.AddPlayers, async (_event, args) => {
+    ipcMain.handle(IPC.AddPlayers, async (_event, args): Promise<ApiResult> => {
       try {
-        await sql.addPlayers(Number(args.PlayStationID), Number(args.additionalPlayers));
-        return { code: 1 };
+        const result = await request('/api/sessions/add-players', 'POST', args);
+        return { code: 1, msg: result };
       } catch (error) {
-        return { code: 0, msg: errorMessage(error) };
+        return { code: 0, msg: error instanceof Error ? error.message : String(error) };
       }
     });
 
-    ipcMain.handle(IPC.ExtendTime, async (_event, args) => {
+    ipcMain.handle(IPC.ExtendTime, async (_event, args): Promise<ApiResult> => {
       try {
-        await sql.extendTime(Number(args.PlayStationID), Number(args.additionalMinutes));
-        return { code: 1 };
+        const result = await request('/api/sessions/extend', 'POST', args);
+        return { code: 1, msg: result };
       } catch (error) {
-        return { code: 0, msg: errorMessage(error) };
+        return { code: 0, msg: error instanceof Error ? error.message : String(error) };
       }
     });
 
-    ipcMain.handle(IPC.UpdateRates, async (_event, args) => {
+    ipcMain.handle(IPC.UpdateRates, async (_event, args): Promise<ApiResult> => {
       try {
-        await sql.updateConsoleRates(Number(args.PlayStationID), args.rates);
-        return { code: 1 };
-      } catch (error) {
-        return { code: 0, msg: errorMessage(error) };
-      }
-    });
-
-    ipcMain.handle(IPC.Delete, async (_event, args) => {
-      try {
-        await sql.deletePlaystation(Number(args.PlayStationID));
-        return { code: 1 };
-      } catch (error) {
-        return { code: 0, msg: errorMessage(error) };
-      }
-    });
-
-    ipcMain.handle(IPC.Reset, async () => {
-      try {
-        await sql.resetAll();
-        return { code: 1 };
-      } catch (error) {
-        return { code: 0, msg: errorMessage(error) };
-      }
-    });
-
-    ipcMain.handle(IPC.getPass, async () => {
-      try {
-        const data = storage.getSync('myData');
-        return { code: 1, password: data?.credentials?.password || 'password' };
-      } catch (error) {
-        return { code: 0, msg: errorMessage(error) };
-      }
-    });
-
-    ipcMain.handle(IPC.UpdataPassword, async (_event, args) => {
-      try {
-        const data = storage.getSync('myData') || {};
-        data.credentials = { ...(data.credentials || {}), password: String(args.newPassword) };
-        await new Promise<void>((resolve, reject) => {
-          storage.set('myData', data, (error: unknown) => error ? reject(error) : resolve());
+        const result = await request(`/api/consoles/${Number(args.PlayStationID)}/rates`, 'PUT', {
+          rates: args.rates,
         });
-        return { code: 1 };
+        return { code: 1, msg: result };
       } catch (error) {
-        return { code: 0, msg: errorMessage(error) };
+        return { code: 0, msg: error instanceof Error ? error.message : String(error) };
+      }
+    });
+
+    ipcMain.handle(IPC.Delete, async (_event, args): Promise<ApiResult> => {
+      try {
+        const result = await request(`/api/consoles/${Number(args.PlayStationID)}`, 'DELETE');
+        return { code: 1, msg: result };
+      } catch (error) {
+        return { code: 0, msg: error instanceof Error ? error.message : String(error) };
+      }
+    });
+
+    ipcMain.handle(IPC.Reset, async (_event, args): Promise<ApiResult> => {
+      try {
+        const result = await request('/api/admin/reset', 'POST', {
+          confirmation: String(args?.confirmation || ''),
+        });
+        return { code: 1, msg: result };
+      } catch (error) {
+        return { code: 0, msg: error instanceof Error ? error.message : String(error) };
       }
     });
   }

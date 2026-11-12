@@ -19,13 +19,21 @@
     "dev": "vite",
     "build": "tsc && vite build && electron-builder",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:api": "tsc -p tsconfig.server.json",
+    "start:api": "node dist-server/server/index.js",
+    "dev:api": "tsx server/index.ts"
   },
   "dependencies": {
     "@azure/identity": "^4.14.1",
     "@radix-ui/react-dialog": "^1.0.4",
     "@reduxjs/toolkit": "^1.9.5",
+    "cors": "^2.8.5",
+    "dotenv": "^18.0.10",
     "electron-json-storage": "^4.6.0",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
     "mssql": "^11.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -36,6 +44,10 @@
     "tailwind-merge": "^1.14.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/mssql": "^12.3.0",
     "@types/node": "^18.17.17",
     "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",
@@ -50,6 +62,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
     "tailwindcss": "^3.3.3",
+    "tsx": "^4.23.15",
     "tw-merge": "^0.0.1-alpha.3",
     "typescript": "^5.2.2",
     "vite": "^4.4.9",
