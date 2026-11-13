@@ -183,6 +183,28 @@ export class Ipc {
       }
     });
 
+    ipcMain.handle(IPC.GetLedger, async (_event, args): Promise<ApiResult> => {
+      try {
+        const params = new URLSearchParams({ from: String(args?.from || ''), to: String(args?.to || '') });
+        return { code: 1, msg: await request(`/api/ledger?${params.toString()}`) };
+      } catch (error) { return { code: 0, msg: error instanceof Error ? error.message : String(error) }; }
+    });
+
+    ipcMain.handle(IPC.GetBillingHistory, async (_event, args): Promise<ApiResult> => {
+      try { return { code: 1, msg: await request(`/api/ledger/${Number(args.SessionID)}/history`) }; }
+      catch (error) { return { code: 0, msg: error instanceof Error ? error.message : String(error) }; }
+    });
+
+    ipcMain.handle(IPC.EditBilling, async (_event, args): Promise<ApiResult> => {
+      try { return { code: 1, msg: await request(`/api/ledger/${Number(args.BillingID)}`, 'PUT', args) }; }
+      catch (error) { return { code: 0, msg: error instanceof Error ? error.message : String(error) }; }
+    });
+
+    ipcMain.handle(IPC.DeleteBilling, async (_event, args): Promise<ApiResult> => {
+      try { return { code: 1, msg: await request(`/api/ledger/${Number(args.BillingID)}`, 'DELETE', { reason: args.reason || '' }) }; }
+      catch (error) { return { code: 0, msg: error instanceof Error ? error.message : String(error) }; }
+    });
+
     ipcMain.handle(IPC.Reset, async (_event, args): Promise<ApiResult> => {
       try {
         const result = await request('/api/admin/reset', 'POST', {

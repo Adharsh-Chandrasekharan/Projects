@@ -90,6 +90,14 @@ async function invoke(channel: string, ...args: any[]): Promise<Result> {
     if (channel === IPC.ExtendTime) return { code: 1, msg: await apiRequest('/api/sessions/extend', 'POST', input) };
     if (channel === IPC.UpdateRates) return { code: 1, msg: await apiRequest(`/api/consoles/${Number(input.PlayStationID)}/rates`, 'PUT', { rates: input.rates }) };
     if (channel === IPC.Delete) return { code: 1, msg: await apiRequest(`/api/consoles/${Number(input.PlayStationID)}`, 'DELETE') };
+    if (channel === IPC.GetLedger) {
+      const params = new URLSearchParams({ from: String(input.from || ''), to: String(input.to || '') });
+      return { code: 1, msg: await apiRequest(`/api/ledger?${params.toString()}`) };
+    }
+    if (channel === IPC.GetBillingHistory) return { code: 1, msg: await apiRequest(`/api/ledger/${Number(input.SessionID)}/history`) };
+    if (channel === IPC.EditBilling) return { code: 1, msg: await apiRequest(`/api/ledger/${Number(input.BillingID)}`, 'PUT', input) };
+    if (channel === IPC.DeleteBilling) return { code: 1, msg: await apiRequest(`/api/ledger/${Number(input.BillingID)}`, 'DELETE', { reason: input.reason || '' }) };
+
     if (channel === IPC.Reset) return { code: 1, msg: await apiRequest('/api/admin/reset', 'POST', { confirmation: String(input.confirmation || '') }) };
 
     return { code: 0, msg: `Unsupported browser operation: ${channel}` };

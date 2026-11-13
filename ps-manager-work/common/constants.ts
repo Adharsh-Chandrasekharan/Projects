@@ -9,6 +9,10 @@ export const IPC = {
   UpdateRates: 'Update Console Rates',
   Delete: 'Delete Console',
   Reset: 'Reset DataBase',
+  GetLedger: 'Get Ledger',
+  GetBillingHistory: 'Get Billing History',
+  EditBilling: 'Edit Billing',
+  DeleteBilling: 'Delete Billing',
   // Legacy local-password channels retained for source compatibility; no handlers are registered.
   getPass: 'get password from json',
   UpdataPassword: 'Update Admin Password',

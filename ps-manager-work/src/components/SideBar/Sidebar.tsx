@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { HiHome, HiOutlineX } from 'react-icons/hi';
+import { FiBookOpen } from 'react-icons/fi';
 import { TbUserEdit } from 'react-icons/tb';
 import { FiLogOut } from 'react-icons/fi';
 import { twMerge } from 'tailwind-merge';
@@ -16,6 +17,7 @@ function Sidebar() {
 
   const routes = useMemo(() => [
     { icon: HiHome, label: 'Home', active: location.pathname === '/' || location.pathname.startsWith('/console/'), href: '/' },
+    { icon: FiBookOpen, label: 'Ledger', active: location.pathname === '/ledger', href: '/ledger' },
     { icon: TbUserEdit, label: 'Admin', active: location.pathname === '/admin', href: '/admin' },
   ], [location.pathname]);
 

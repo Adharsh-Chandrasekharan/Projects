@@ -88,11 +88,16 @@ BEGIN
         DiscountAmount DECIMAL(10,2) NOT NULL,
         TotalAmount DECIMAL(10,2) NOT NULL,
         PerPersonAmount DECIMAL(10,2) NOT NULL,
+        IsDeleted BIT NOT NULL CONSTRAINT DF_Billing_IsDeleted DEFAULT (0),
+        ReplacesBillingID BIGINT NULL,
+        EditReason NVARCHAR(500) NULL,
         CreatedAt DATETIME2(0) NOT NULL CONSTRAINT DF_Billing_CreatedAt DEFAULT (SYSDATETIME()),
         CONSTRAINT FK_Billing_Sessions FOREIGN KEY (SessionID) REFERENCES dbo.Sessions(SessionID),
-        CONSTRAINT FK_Billing_PlayStations FOREIGN KEY (PlayStationID) REFERENCES dbo.PlayStations(PlayStationID)
+        CONSTRAINT FK_Billing_PlayStations FOREIGN KEY (PlayStationID) REFERENCES dbo.PlayStations(PlayStationID),
+        CONSTRAINT FK_Billing_ReplacesBilling FOREIGN KEY (ReplacesBillingID) REFERENCES dbo.Billing(BillingID)
     );
     CREATE INDEX IX_Billing_CreatedAt ON dbo.Billing(CreatedAt DESC);
+    CREATE UNIQUE INDEX UX_Billing_OneCurrentVersionPerSession ON dbo.Billing(SessionID) WHERE IsDeleted = 0;
 END;
 GO
 
@@ -106,5 +111,6 @@ SELECT
     SUM(DiscountAmount) AS DiscountsGiven,
     SUM(TotalAmount) AS NetRevenue
 FROM dbo.Billing
+WHERE IsDeleted = 0
 GROUP BY CAST(CreatedAt AS date);
 GO

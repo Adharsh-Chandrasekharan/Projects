@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Admin from './pages/Admin';
+import Ledger from './pages/Ledger';
 import MainPage from './pages/MainPage';
 import ConsolePage from './pages/ConsolePage';
 import LoginPage from './pages/LoginPage';
@@ -60,6 +61,7 @@ function App() {
             <Route path="/" element={<MainPage />} />
             <Route path="/console/:id" element={<ConsolePage />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/ledger" element={<Ledger />} />
           </Routes>
         </div>
       </div>

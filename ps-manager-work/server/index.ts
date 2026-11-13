@@ -136,6 +136,29 @@ app.delete('/api/consoles/:id', asyncRoute(async (req, res) => {
   res.json({ success: true });
 }));
 
+// Ledger: current billing versions only. Date boundaries are session EndTime.
+app.get('/api/ledger', asyncRoute(async (req, res) => {
+  const from = String(req.query.from || '');
+  const to = String(req.query.to || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || from > to) {
+    return res.status(400).json({ message: 'Provide a valid date range.' });
+  }
+  res.json(await db.getLedger(from, to));
+}));
+
+app.get('/api/ledger/:sessionId/history', asyncRoute(async (req, res) => {
+  res.json(await db.getBillingHistory(Number(req.params.sessionId)));
+}));
+
+app.put('/api/ledger/:billingId', asyncRoute(async (req, res) => {
+  res.json(await db.editBilling(Number(req.params.billingId), req.body || {}));
+}));
+
+app.delete('/api/ledger/:billingId', asyncRoute(async (req, res) => {
+  await db.deleteBilling(Number(req.params.billingId), String(req.body?.reason || ''));
+  res.json({ success: true });
+}));
+
 // Reset all data. This is deliberately protected by JWT authentication
 // and requires an explicit confirmation phrase from the administrator.
 app.post('/api/admin/reset', asyncRoute(async (req, res) => {

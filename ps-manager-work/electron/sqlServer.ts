@@ -435,6 +435,109 @@ export class SqlServer {
     }
   }
 
+
+  async getLedger(fromDate: string, toDate: string): Promise<any[]> {
+    const pool = await this.getPool();
+    const result = await pool.request()
+      .input('fromDate', sql.Date, fromDate)
+      .input('toDate', sql.Date, toDate)
+      .query(`
+        SELECT b.BillingID, b.SessionID, b.PlayStationID, p.PlayStationName,
+          s.StartTime, s.EndTime, b.PlayersNumber, b.DurationMinutes,
+          b.GrossAmount, b.DiscountPercent, b.DiscountAmount, b.TotalAmount,
+          b.PerPersonAmount, b.CreatedAt
+        FROM dbo.Billing b
+        INNER JOIN dbo.Sessions s ON s.SessionID = b.SessionID
+        INNER JOIN dbo.PlayStations p ON p.PlayStationID = s.PlayStationID
+        WHERE b.IsDeleted = 0
+          AND s.EndTime >= @fromDate
+          AND s.EndTime < DATEADD(day, 1, @toDate)
+        ORDER BY s.EndTime DESC, b.BillingID DESC;
+      `);
+    return result.recordset;
+  }
+
+  async getBillingHistory(sessionId: number): Promise<any[]> {
+    const pool = await this.getPool();
+    const result = await pool.request()
+      .input('sessionId', sql.BigInt, sessionId)
+      .query(`
+        SELECT b.BillingID, b.SessionID, b.PlayersNumber, b.DurationMinutes,
+          b.GrossAmount, b.DiscountPercent, b.DiscountAmount, b.TotalAmount,
+          b.PerPersonAmount, b.CreatedAt, b.IsDeleted, b.ReplacesBillingID, b.EditReason
+        FROM dbo.Billing b
+        WHERE b.SessionID = @sessionId
+        ORDER BY b.BillingID DESC;
+      `);
+    return result.recordset;
+  }
+
+  async editBilling(billingId: number, input: any): Promise<{ BillingID: number }> {
+    const players = Number(input.PlayersNumber);
+    const duration = Number(input.DurationMinutes);
+    const gross = Number(input.GrossAmount);
+    const discountPercent = Number(input.DiscountPercent);
+    const discountAmount = Number(input.DiscountAmount);
+    const total = Number(input.TotalAmount);
+    const perPerson = Number(input.PerPersonAmount);
+    if (!Number.isInteger(players) || players < 1 || players > 4) throw new Error('Players must be between 1 and 4.');
+    if (!Number.isInteger(duration) || duration < 1) throw new Error('Duration must be a positive number of minutes.');
+    if ([gross, discountPercent, discountAmount, total, perPerson].some(v => !Number.isFinite(v) || v < 0)) throw new Error('Billing amounts must be valid non-negative numbers.');
+    if (discountPercent > 100) throw new Error('Discount cannot exceed 100%.');
+    const pool = await this.getPool();
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin();
+    try {
+      const current = await new sql.Request(transaction)
+        .input('id', sql.BigInt, billingId)
+        .query('SELECT TOP (1) * FROM dbo.Billing WITH (UPDLOCK, ROWLOCK) WHERE BillingID = @id AND IsDeleted = 0;');
+      if (!current.recordset.length) throw new Error('This billing entry is no longer current. Refresh the ledger.');
+      const old = current.recordset[0];
+      const inserted = await new sql.Request(transaction)
+        .input('sessionId', sql.BigInt, Number(old.SessionID))
+        .input('consoleId', sql.Int, Number(old.PlayStationID))
+        .input('players', sql.TinyInt, players)
+        .input('duration', sql.Int, duration)
+        .input('gross', sql.Decimal(10, 2), gross)
+        .input('discountPercent', sql.Decimal(5, 2), discountPercent)
+        .input('discountAmount', sql.Decimal(10, 2), discountAmount)
+        .input('total', sql.Decimal(10, 2), total)
+        .input('perPerson', sql.Decimal(10, 2), perPerson)
+        .input('oldId', sql.BigInt, billingId)
+        .input('reason', sql.NVarChar(500), String(input.EditReason || '').slice(0, 500))
+        .query(`
+          UPDATE dbo.Billing SET IsDeleted = 1 WHERE BillingID = @oldId AND IsDeleted = 0;
+          INSERT INTO dbo.Billing
+            (SessionID, PlayStationID, PlayersNumber, DurationMinutes, GrossAmount,
+             DiscountPercent, DiscountAmount, TotalAmount, PerPersonAmount,
+             ReplacesBillingID, EditReason)
+          OUTPUT INSERTED.BillingID
+          VALUES
+            (@sessionId, @consoleId, @players, @duration, @gross,
+             @discountPercent, @discountAmount, @total, @perPerson,
+             @oldId, @reason);
+        `);
+      await transaction.commit();
+      return { BillingID: Number(inserted.recordset[0].BillingID) };
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  }
+
+  async deleteBilling(billingId: number, reason = ''): Promise<void> {
+    const pool = await this.getPool();
+    const result = await pool.request()
+      .input('id', sql.BigInt, billingId)
+      .input('reason', sql.NVarChar(500), reason.slice(0, 500))
+      .query(`
+        UPDATE dbo.Billing
+        SET IsDeleted = 1, EditReason = CASE WHEN @reason = '' THEN EditReason ELSE @reason END
+        WHERE BillingID = @id AND IsDeleted = 0;
+      `);
+    if (!result.rowsAffected[0]) throw new Error('Billing entry not found or already deleted.');
+  }
+
   async deletePlaystation(playStationId: number): Promise<void> {
     const pool = await this.getPool();
     const result = await pool.request().input('id', sql.Int, playStationId).query(`

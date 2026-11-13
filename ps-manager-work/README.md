@@ -132,3 +132,12 @@ npm run dev
 ```
 
 In the dependency tree, the `https-proxy-agent` directly beneath `@typespec/ts-http-runtime` should show `7.0.6`. The separate `https-proxy-agent@5.x` used by `electron-builder` may remain; that is expected. Do not edit files inside `node_modules` manually.
+
+
+## Ledger feature (November 2026)
+
+The Ledger page lists the current billing version for each completed session. Date filters are based on `Sessions.EndTime`; editing a bill does not change its session date.
+
+Before deploying the updated API, run `database/ledger-migration.sql` once against the existing Azure SQL `PlayStationManager` database. This migration preserves existing billing rows, adds soft-delete/version metadata, and creates a filtered unique index so each session can have only one current billing version.
+
+Editing a ledger row marks its current `Billing` row as deleted and inserts a new row with the same `SessionID` and a `ReplacesBillingID` reference. Deleting a ledger row is a soft delete. `Sessions` is not modified by ledger edits. The Ledger UI and daily billing view include only `Billing.IsDeleted = 0`.
