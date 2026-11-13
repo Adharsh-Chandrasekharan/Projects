@@ -82,7 +82,7 @@ export default function Ledger() {
   };
 
   const deleteEntry = async (r: Entry) => {
-    if (!window.confirm(`Delete billing entry #${r.BillingID}? .`)) return;
+    if (!window.confirm(`Delete billing entry #${r.BillingID}? This action cannot be undone.`)) return;
     const result = await window.ipcRenderer.invoke(IPC.DeleteBilling, { BillingID:r.BillingID, reason:'Deleted from ledger' });
     if (result.code !== 1) { setError(String(result.msg)); return; }
     await load();
