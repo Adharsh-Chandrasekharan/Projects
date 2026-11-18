@@ -14,6 +14,7 @@ interface ActionResult<T = unknown> {
 export const usePlaystations = () => {
   const dispatch = useDispatch();
   const playstations = useSelector((state: RootState) => state.playstation.playstations);
+  const hasLoaded = useSelector((state: RootState) => state.playstation.hasLoaded);
 
   const getAllPlaystations = useCallback(async (): Promise<ActionResult> => {
     try {
@@ -105,5 +106,5 @@ export const usePlaystations = () => {
     }
   }, [getAllPlaystations]);
 
-  return { playstations, getAllPlaystations, createPlaystation, reserveSession, endSession, addPlayers, extendTime, updateRates };
+  return { playstations, hasLoaded, getAllPlaystations, createPlaystation, reserveSession, endSession, addPlayers, extendTime, updateRates };
 };

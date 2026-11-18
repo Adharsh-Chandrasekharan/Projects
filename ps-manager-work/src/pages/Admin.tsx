@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import Header from '../components/Header';
 import { usePlaystations } from '../hooks/usePlaystations';
@@ -7,13 +7,17 @@ import { IPC } from '../../common/constants';
 const inputClass = 'w-full rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2.5 text-white outline-none focus:border-sky-500';
 
 const Admin: React.FC = () => {
-  const { playstations, getAllPlaystations } = usePlaystations();
+  const { playstations, hasLoaded, getAllPlaystations } = usePlaystations();
   const [selectedConsole, setSelectedConsole] = useState('');
   const [busy, setBusy] = useState(false);
+  const initialFetchAttempted = useRef(false);
 
   useEffect(() => {
-    getAllPlaystations();
-  }, [getAllPlaystations]);
+    if (!hasLoaded && !initialFetchAttempted.current) {
+      initialFetchAttempted.current = true;
+      void getAllPlaystations();
+    }
+  }, [hasLoaded, getAllPlaystations]);
 
   const deleteConsole = async () => {
     if (!selectedConsole) return toast.error('Select a console to delete.');
@@ -62,7 +66,7 @@ const Admin: React.FC = () => {
   };
 
   return (
-    <main className="h-screen min-w-0 flex-1 overflow-y-auto bg-black p-2 text-white sm:p-3 sm:pr-4">
+    <main className="h-full min-h-0 min-w-0 flex-1 overflow-y-auto bg-black p-2 text-white sm:p-3 sm:pr-4">
       <Header className="rounded-2xl">
         <div className="px-1 py-1 sm:px-2 sm:py-2">
           <h1 className="text-xl font-bold sm:text-2xl">Admin settings</h1>

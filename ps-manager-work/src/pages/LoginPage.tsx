@@ -38,7 +38,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-black px-4 text-white">
+    <main className="flex min-h-screen min-h-[100dvh] items-center justify-center bg-black px-4 text-white">
       <section className="w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-950 p-7 shadow-2xl sm:p-9">
         <div className="mb-7 flex flex-col items-center text-center">
           <img src={logo} alt="GRINDxGAMING" className="mb-4 h-20 w-20 rounded-2xl object-cover" />

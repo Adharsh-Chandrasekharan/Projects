@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Modal from '../Modal/Modal';
 import AddModal from '../Modal/AddModal';
 import { BsPlaystation } from 'react-icons/bs';
@@ -7,14 +7,8 @@ import PsListItem from './PsListItem';
 import { usePlaystations } from '../../hooks/usePlaystations';
 
 const Library: React.FC = () => {
-  const { playstations, getAllPlaystations } = usePlaystations();
+  const { playstations } = usePlaystations();
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  useEffect(() => {
-    getAllPlaystations();
-    const refresh = window.setInterval(() => getAllPlaystations(), 5000);
-    return () => window.clearInterval(refresh);
-  }, [getAllPlaystations]);
 
   return (
     <div className="flex flex-col">

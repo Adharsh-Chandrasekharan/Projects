@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { HiOutlineMenuAlt2 } from 'react-icons/hi';
@@ -9,6 +9,7 @@ import { calculateClientQuote, currency } from '../functions/rates';
 import { useMobileSidebar } from '../context/MobileSidebarContext';
 import ElapsedTimer from '../components/ElapsedTimer';
 import RateEditor from '../components/RateEditor';
+import RefreshButton from '../components/RefreshButton';
 
 const labelClass = 'mb-1.5 block text-sm text-neutral-400';
 const fieldClass = 'w-full rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2.5 text-white outline-none focus:border-sky-500';
@@ -18,19 +19,23 @@ const ConsolePage: React.FC = () => {
   const consoleId = Number(id);
   const navigate = useNavigate();
   const { open: openMenu } = useMobileSidebar();
-  const { playstations, getAllPlaystations, reserveSession, endSession, addPlayers, extendTime, updateRates } = usePlaystations();
+  const { playstations, hasLoaded, getAllPlaystations, reserveSession, endSession, addPlayers, extendTime, updateRates } = usePlaystations();
   const [players, setPlayers] = useState(2);
   const [duration, setDuration] = useState(60);
   const [discount, setDiscount] = useState(0);
   const [saving, setSaving] = useState(false);
   const [editingRates, setEditingRates] = useState(false);
   const [draftRates, setDraftRates] = useState<ConsoleRate[]>([]);
+  const initialFetchAttempted = useRef(false);
 
   useEffect(() => {
-    getAllPlaystations();
-    const refresh = window.setInterval(() => getAllPlaystations(), 3000);
-    return () => window.clearInterval(refresh);
-  }, [getAllPlaystations]);
+    // Normally Home has already loaded the console list. Fetch only once
+    // when this route is opened directly and the in-memory store is empty.
+    if (!hasLoaded && !initialFetchAttempted.current) {
+      initialFetchAttempted.current = true;
+      void getAllPlaystations();
+    }
+  }, [hasLoaded, getAllPlaystations]);
 
   const consoleData = playstations.find((item) => item.PlayStationID === consoleId);
   const active = Boolean(consoleData && !consoleData.IsAvailable);
@@ -60,7 +65,6 @@ const ConsolePage: React.FC = () => {
       return;
     }
     toast.success(`${consoleData.PlayStationName} reserved successfully.`);
-    await getAllPlaystations();
   };
 
   const handleEnd = async () => {
@@ -74,7 +78,6 @@ const ConsolePage: React.FC = () => {
       return;
     }
     toast.success('Session ended. Billing record saved to Azure SQL.');
-    await getAllPlaystations();
   };
 
   const handleAddPlayer = async () => {
@@ -112,7 +115,7 @@ const ConsolePage: React.FC = () => {
 
   if (!consoleData) {
     return (
-      <main className="flex h-screen flex-1 items-center justify-center bg-black p-8 text-center text-white">
+      <main className="flex min-h-full flex-1 items-center justify-center bg-black p-8 text-center text-white">
         <div>
           <p className="text-xl font-semibold">Console not found</p>
           <p className="mt-2 text-sm text-neutral-500">It may have been removed or the database is not connected.</p>
@@ -126,7 +129,7 @@ const ConsolePage: React.FC = () => {
   const activeDuration = Number(consoleData.ActiveDurationMinutes || 0);
 
   return (
-    <main className="h-screen min-w-0 flex-1 overflow-y-auto bg-black p-2 text-white sm:p-3 sm:pr-4">
+    <main className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-black p-2 text-white sm:p-3 sm:pr-4">
       <div className="mx-auto max-w-5xl">
         <div className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-neutral-800 bg-neutral-950 px-3 py-3 sm:gap-4 sm:px-5 sm:py-4">
           <div className="flex min-w-0 items-start gap-2">
@@ -144,9 +147,12 @@ const ConsolePage: React.FC = () => {
               <p className="mt-1 text-xs text-neutral-500 sm:text-sm">{consoleData.PlayStationType} · Console #{consoleData.PlayStationID}</p>
             </div>
           </div>
-          <span className={`shrink-0 rounded-full px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider sm:px-3 sm:text-xs ${active ? 'bg-rose-500/15 text-rose-300' : 'bg-emerald-500/15 text-emerald-300'}`}>
-            {active ? 'In session' : 'Available'}
-          </span>
+          <div className="flex shrink-0 items-center gap-2">
+            <RefreshButton />
+            <span className={`rounded-full px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider sm:px-3 sm:text-xs ${active ? 'bg-rose-500/15 text-rose-300' : 'bg-emerald-500/15 text-emerald-300'}`}>
+              {active ? 'In session' : 'Available'}
+            </span>
+          </div>
         </div>
 
         {active ? (

@@ -1,20 +1,12 @@
-
 import { useEffect, useRef, useState } from 'react';
-
-interface ActiveConsole {
-  PlayStationID: number;
-  PlayStationName: string;
-  StartTime: string;
-  ActiveDurationMinutes: number;
-  ActiveSessionID?: number | null;
-}
+import { useSelector } from 'react-redux';
+import { RootState } from '../Redux/store';
+import { Playstation } from '../types';
 
 interface AlarmItem {
   key: string;
   consoleName: string;
 }
-
-const CHECK_INTERVAL = 5000;
 
 function getExpiryTime(startTime: string, duration: number): number {
   const normalized = startTime.includes('T')
@@ -25,100 +17,63 @@ function getExpiryTime(startTime: string, duration: number): number {
 }
 
 const SessionAlarm: React.FC = () => {
+  const playstations = useSelector((state: RootState) => state.playstation.playstations);
   const [alarms, setAlarms] = useState<AlarmItem[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(false);
 
   const audioContext = useRef<AudioContext | null>(null);
   const activeAlarmKeys = useRef<Set<string>>(new Set());
 
-  // Check all active console sessions.
+  // Timer/alarm checks use the already-loaded Redux data. This local
+  // one-second check never calls the API or Azure SQL.
   useEffect(() => {
-    let mounted = true;
+    const activeSessions = playstations.filter(
+      (item): item is Playstation & { StartTime: string; ActiveDurationMinutes: number } =>
+        !item.IsAvailable &&
+        Boolean(item.StartTime) &&
+        item.ActiveDurationMinutes != null
+    );
 
-    const checkSessions = async () => {
-      try {
-        const response = await window.ipcRenderer.invoke(
-          'Get All Playstations'
-        );
+    const currentSessionKeys = new Set(
+      activeSessions.map(item => String(
+        item.ActiveSessionID ?? `${item.PlayStationID}-${item.StartTime}`
+      ))
+    );
 
-        if (!mounted || response.code !== 1) return;
+    activeAlarmKeys.current.forEach(key => {
+      if (!currentSessionKeys.has(key)) activeAlarmKeys.current.delete(key);
+    });
 
-        const consoles: ActiveConsole[] = response.msg || [];
-        const now = Date.now();
+    const checkExpiredSessions = () => {
+      const now = Date.now();
+      const expired = activeSessions.filter(item => {
+        const expiry = getExpiryTime(item.StartTime, item.ActiveDurationMinutes);
+        return Number.isFinite(expiry) && now >= expiry;
+      });
 
-        const expired: AlarmItem[] = [];
-
-        for (const consoleItem of consoles) {
-          if (
-            consoleItem.ActiveDurationMinutes == null ||
-            !consoleItem.StartTime
-          ) {
-            continue;
-          }
-
-          const expiry = getExpiryTime(
-            consoleItem.StartTime,
-            consoleItem.ActiveDurationMinutes
-          );
-
-          if (!Number.isFinite(expiry) || now < expiry) continue;
-
-          const sessionKey = String(
-            consoleItem.ActiveSessionID ??
-            `${consoleItem.PlayStationID}-${consoleItem.StartTime}`
-          );
-
-          expired.push({
-            key: sessionKey,
-            consoleName: consoleItem.PlayStationName,
-          });
-        }
-
-        if (!mounted) return;
-
-        // Remove alarms for sessions which are no longer active.
-        const currentKeys = new Set(expired.map(item => item.key));
-
-        activeAlarmKeys.current.forEach(key => {
-          if (!currentKeys.has(key)) {
-            activeAlarmKeys.current.delete(key);
-          }
-        });
-
-        // Add newly expired sessions.
-        const newAlarms = expired.filter(item => {
+      const newAlarms = expired
+        .map(item => ({
+          key: String(item.ActiveSessionID ?? `${item.PlayStationID}-${item.StartTime}`),
+          consoleName: item.PlayStationName,
+        }))
+        .filter(item => {
           if (activeAlarmKeys.current.has(item.key)) return false;
-
           activeAlarmKeys.current.add(item.key);
           return true;
         });
 
-        if (newAlarms.length > 0) {
-          setAlarms(previous => {
-            const existing = new Set(previous.map(item => item.key));
-            return [
-              ...previous,
-              ...newAlarms.filter(item => !existing.has(item.key)),
-            ];
-          });
-        }
-      } catch (error) {
-        console.error('[Session Alarm] Session check failed:', error);
+      if (newAlarms.length) {
+        setAlarms(previous => {
+          const existing = new Set(previous.map(item => item.key));
+          return [...previous, ...newAlarms.filter(item => !existing.has(item.key))];
+        });
       }
     };
 
-    checkSessions();
-
-    const interval = window.setInterval(
-      checkSessions,
-      CHECK_INTERVAL
-    );
-
-    return () => {
-      mounted = false;
-      window.clearInterval(interval);
-    };
-  }, []);
+    checkExpiredSessions();
+    const timer = window.setInterval(checkExpiredSessions, 1000);
+    return () => window.clearInterval(timer);
+  }, [playstations]);
 
   // Play a repeating alarm while any expired session is active.
   useEffect(() => {

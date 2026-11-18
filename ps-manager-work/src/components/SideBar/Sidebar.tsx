@@ -48,14 +48,14 @@ function Sidebar() {
         tabIndex={isOpen ? 0 : -1}
         onClick={close}
         className={twMerge(
-          'fixed inset-0 z-40 bg-black/60 transition-opacity md:hidden',
+          'fixed inset-x-0 top-[env(safe-area-inset-top)] bottom-[env(safe-area-inset-bottom)] z-40 bg-black/60 transition-opacity md:hidden',
           isOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       />
 
       <aside
         className={twMerge(
-          'fixed inset-y-0 left-0 z-50 flex h-screen w-[min(280px,85vw)] shrink-0 flex-col gap-y-3 bg-black p-3 transition-transform duration-300 ease-out md:relative md:z-auto md:w-[280px] md:translate-x-0',
+          'fixed left-0 top-[env(safe-area-inset-top)] bottom-[env(safe-area-inset-bottom)] z-50 flex h-auto w-[min(280px,85vw)] shrink-0 flex-col gap-y-3 overflow-hidden bg-black p-3 transition-transform duration-300 ease-out md:relative md:inset-auto md:h-full md:w-[280px] md:translate-x-0',
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
         )}
       >

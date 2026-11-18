@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FiBookOpen, FiCalendar, FiEdit2, FiTrash2, FiClock, FiRefreshCw, FiX } from 'react-icons/fi';
+import { FiBookOpen, FiCalendar, FiEdit2, FiTrash2, FiClock, FiX } from 'react-icons/fi';
+import { HiOutlineMenuAlt2 } from 'react-icons/hi';
+import { useMobileSidebar } from '../context/MobileSidebarContext';
+import RefreshButton from '../components/RefreshButton';
 import { IPC } from '../../common/constants';
 
 type Entry = {
@@ -15,6 +18,7 @@ const dateOnly = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padSt
 const shift = (d: Date, days: number) => { const x = new Date(d); x.setDate(x.getDate()+days); return x; };
 
 export default function Ledger() {
+  const { open } = useMobileSidebar();
   const today = new Date();
   const [preset, setPreset] = useState('today');
   const [from, setFrom] = useState(dateOnly(today));
@@ -36,6 +40,12 @@ export default function Ledger() {
   }, [from, to]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const refreshLedger = () => { void load(); };
+    window.addEventListener('app:refresh-ledger', refreshLedger);
+    return () => window.removeEventListener('app:refresh-ledger', refreshLedger);
+  }, [load]);
 
   const choosePreset = (value: string) => {
     const now = new Date();
@@ -94,10 +104,24 @@ export default function Ledger() {
     else setError(String(result.msg));
   };
 
-  return <main className="flex h-screen min-w-0 flex-1 flex-col gap-4 overflow-hidden bg-black p-3 sm:p-4">
-    <header className="flex items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
-      <div className="flex items-center gap-3"><FiBookOpen className="text-2xl text-violet-400"/><div><h1 className="text-xl font-bold text-white">Ledger</h1><p className="text-xs text-neutral-500">Session billing and historical corrections</p></div></div>
-      <button onClick={load} className="rounded-lg border border-neutral-700 p-2 text-neutral-300 hover:bg-neutral-800" title="Refresh"><FiRefreshCw/></button>
+  return <main className="flex h-full min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden bg-black p-3 sm:p-4">
+    <header className="flex items-center justify-between gap-3 rounded-2xl border border-neutral-800 bg-neutral-950 p-3 sm:p-4">
+      <div className="flex min-w-0 items-center gap-3">
+        <button
+          type="button"
+          aria-label="Open menu"
+          onClick={open}
+          className="flex shrink-0 items-center justify-center rounded-lg bg-neutral-800 p-2 text-white transition hover:bg-neutral-700 md:hidden"
+        >
+          <HiOutlineMenuAlt2 size={22} />
+        </button>
+        <FiBookOpen className="shrink-0 text-2xl text-violet-400" />
+        <div className="min-w-0">
+          <h1 className="text-lg font-bold text-white sm:text-xl">Ledger</h1>
+          <p className="hidden text-xs text-neutral-500 sm:block">Session billing and historical corrections</p>
+        </div>
+      </div>
+      <div className="shrink-0"><RefreshButton /></div>
     </header>
 
     <section className="rounded-2xl border border-neutral-800 bg-neutral-950 p-3">

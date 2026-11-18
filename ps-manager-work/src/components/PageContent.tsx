@@ -3,7 +3,7 @@ import { usePlaystations } from '../hooks/usePlaystations';
 import Card from './Card';
 
 const Content: React.FC = () => {
-  const { playstations, getAllPlaystations } = usePlaystations();
+  const { playstations, hasLoaded, getAllPlaystations } = usePlaystations();
   const [databaseError, setDatabaseError] = useState('');
 
   useEffect(() => {
@@ -11,10 +11,9 @@ const Content: React.FC = () => {
       const result = await getAllPlaystations();
       setDatabaseError(result.success ? '' : (result.message || 'Could not connect to Azure SQL.'));
     };
-    void refresh();
-    const timer = window.setInterval(() => void refresh(), 5000);
-    return () => window.clearInterval(timer);
-  }, [getAllPlaystations]);
+    // Load once per app session. Returning to Home reuses Redux data.
+    if (!hasLoaded) void refresh();
+  }, [hasLoaded, getAllPlaystations]);
 
   if (databaseError && playstations.length === 0) {
     return (
@@ -22,7 +21,7 @@ const Content: React.FC = () => {
         <div className="max-w-xl">
           <p className="text-lg font-semibold text-amber-200">Azure SQL connection required</p>
           <p className="mt-2 break-words text-sm text-neutral-400">{databaseError}</p>
-          <p className="mt-3 text-xs text-neutral-500">If this is a login failure: reset the Azure SQL admin password and copy it into .env SQL_PASSWORD, and ensure “Support only Microsoft Entra authentication” is OFF. Also allow your client IP on the SQL firewall and run database/schema-azure.sql. The app retries automatically.</p>
+          <p className="mt-3 text-xs text-neutral-500">If this is a login failure: reset the Azure SQL admin password and copy it into .env SQL_PASSWORD, and ensure “Support only Microsoft Entra authentication” is OFF. Also allow your client IP on the SQL firewall and run database/schema-azure.sql. Refresh the page after the database connection is restored.</p>
         </div>
       </div>
     );

@@ -4,7 +4,7 @@ import { lables } from '../../common/constants';
 import imagePath from '../assets/logo.png';
 
 const MainPage = () => (
-  <main className="flex h-screen min-w-0 flex-1 flex-col gap-y-4 overflow-hidden bg-black p-2 sm:p-3 sm:pr-4">
+  <main className="flex h-full min-h-0 min-w-0 flex-1 flex-col gap-y-4 overflow-hidden bg-black p-2 sm:p-3 sm:pr-4">
     <Header className="rounded-2xl">
       <div className="flex items-center gap-3 px-1 py-1 sm:gap-4 sm:px-3 sm:py-2">
         <img className="h-12 w-12 shrink-0 rounded-xl object-cover sm:h-14 sm:w-14" src={imagePath} alt="PlayStation Manager logo" />

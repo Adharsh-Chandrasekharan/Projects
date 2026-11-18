@@ -42,7 +42,7 @@ function App() {
 
   if (!authChecked) {
     return (
-      <div className="flex h-screen items-center justify-center bg-black text-sm text-neutral-400">
+      <div className="flex h-screen h-[100dvh] items-center justify-center bg-black px-4 text-center text-sm text-neutral-400">
         Starting GRINDxGAMING PlayStation Manager...
       </div>
     );
@@ -54,7 +54,7 @@ function App() {
 
   return (
     <MobileSidebarProvider>
-      <div className="relative flex h-screen overflow-hidden bg-black">
+      <div className="app-shell relative flex h-screen h-[100dvh] overflow-hidden bg-black pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <Sidebar />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <Routes>
